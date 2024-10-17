@@ -1,6 +1,6 @@
-# Repository for ETHSofia 17-19 Oct Hackaton
+# Repository for Encode London 25-27 Oct Hackaton
 
-Welcome to ETHSofia 17-19 Oct Hackaton. To participate in hackaton you need to setup blocksense network in your local machine.
+Welcome to Encode London 25-27 Oct Hackaton. To participate in hackaton you need to setup blocksense network in your local machine.
 
 Install git, [docker compose](https://docs.docker.com/compose/install/) & [rust](https://www.rust-lang.org/tools/install). Currently we only support rust for writing oracle scripts. It's technologically possible to use other languages, but this is out of the scope for this hackaton because our SDK is only available for rust. So you need to get rusty !
 Your first goal is to run one of our oracle script to verify all services are running and set up correctly.
@@ -8,13 +8,13 @@ Your first goal is to run one of our oracle script to verify all services are ru
 1. Clone this repository:
 
    ```bash
-   git clone git@github.com:blocksense-network/ethsofia_hackaton.git
+   git clone git@github.com:blocksense-network/EncodeLondon_Hackathon.git
    ```
 
    or
 
    ```bash
-   git clone https://github.com/blocksense-network/ethsofia_hackaton.git
+   git clone https://github.com/blocksense-network/EncodeLondon_Hackathon.git
    ```
 
 > [!IMPORTANT]
