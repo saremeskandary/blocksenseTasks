@@ -1,8 +1,9 @@
 name: blocksense-hackaton
 services:
-  anvil-a:
-    image: ghcr.io/foundry-rs/foundry:nightly-0688b5ad19a637303c038d1a66aec62a73713e20
-    entrypoint: [ 'sh', '-c', 'anvil -p 8545 --host 0.0.0.0 --fork-url "wss://ethereum-sepolia-rpc.publicnode.com" --chain-id 99999999999' ]
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:nightly-0688b5ad19a637303c038d1a66aec62a73713e20 
+    entrypoint: [ 'sh', '-c', 'anvil -p 8545 --host 0.0.0.0 --fork-url "https://ethereum-sepolia-rpc.publicnode.com" --chain-id 99999999999' ]
+      #entrypoint: [ 'sh', '-c', 'anvil -p 8545 --host 0.0.0.0 --fork-url "wss://polygon-amoy-bor-rpc.publicnode.com" --chain-id 99999999999' ]
 
     ports:
       - '8545:8545'
@@ -14,28 +15,17 @@ services:
       timeout: 5s
       retries: 1
 
-  anvil-b:
-    image: ghcr.io/foundry-rs/foundry:nightly-0688b5ad19a637303c038d1a66aec62a73713e20
-    entrypoint: [ 'sh', '-c', 'anvil -p 8546 --host 0.0.0.0 --fork-url "wss://ethereum-sepolia-rpc.publicnode.com" --chain-id 99999999999' ]
-    ports:
-      - '8546:8546'
-    networks:
-      - backend
-    healthcheck:
-      test: wget http://0.0.0.0:8546 2>&1 | grep -c 'Bad Request' > /dev/null
-      interval: 5s
-      timeout: 5s
-      retries: 1
 
   sequencer:
     image: ymadzhunkov/blocksense_hackaton:sequencer
     ports:
       - '8877:8877'
-      - '5555:5555'
-      - '5556:5556'
+      - '25555:25555'
+      - '25556:25556'
     volumes:
       - ./config/feeds_config.json:/usr/local/blocksense/feeds_config.json
-
+      - ./config/sequencer_config.json:/usr/local/blocksense/apps/sequencer/sequencer_config.json
+      - ./config/sequencer_priv_key_test:/tmp/priv_key_test
     networks:
       - backend
     healthcheck:
@@ -44,44 +34,31 @@ services:
       timeout: 5s
       retries: 1
     depends_on:
-      anvil-a:
+      anvil:
         condition: service_healthy
-      anvil-b:
-        condition: service_healthy
-      scdeploy-a:
-        condition: service_completed_successfully
-      scdeploy-b:
+      scdeploy:
         condition: service_completed_successfully
 
-  scdeploy-a:
+  scdeploy:
     image: ymadzhunkov/blocksense_hackaton:scdeploy
     environment:
-      - RPC_URL_LOCAL=http://anvil-a:8545
+      - RPC_URL_LOCAL=http://anvil:8545
     volumes:
       - ./config/feeds_config.json:/usr/local/blocksense/config/feeds_config.json
     networks:
       - backend
     depends_on:
-      anvil-a:
+      anvil:
         condition: service_healthy
 
-  scdeploy-b:
-    image: ymadzhunkov/blocksense_hackaton:scdeploy
-    environment:
-      - RPC_URL_LOCAL=http://anvil-b:8546
-    volumes:
-      - ./config/feeds_config.json:/usr/local/blocksense/config/feeds_config.json
-    networks:
-      - backend
-    depends_on:
-      anvil-b:
-        condition: service_healthy
 
   reporter:
     image: ymadzhunkov/blocksense_hackaton:reporter
     networks:
       - backend
     volumes:
+      - ./config/reporter_config.json:/usr/local/blocksense/apps/reporter/reporter_config.json
+      - ./config/reporter_secret_key:/usr/local/blocksense/apps/reporter/reporter_secret_key
       - ./examples/yahoo:/usr/local/blocksense/oracles/yahoo
       - ./examples/revolut:/usr/local/blocksense/oracles/revolut
       - ./examples/cmc:/usr/local/blocksense/oracles/cmc
