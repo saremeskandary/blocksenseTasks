@@ -109,49 +109,49 @@ Start docker compose again. That will start 2 anvil instances, one sequencer and
 If everything is setup correctly you will see anvil reporting published transactions:
 
 ```bash
-  docker compose logs anvil-a
+  docker compose logs anvil
 ```
 
 ```log
 
-anvil-a-1 | Genesis Timestamp
-anvil-a-1 | ==================
-anvil-a-1 |
-anvil-a-1 | 1728549718
-anvil-a-1 |
-anvil-a-1 | Listening on 0.0.0.0:8545
-anvil-a-1 | eth_blockNumber
-anvil-a-1 | eth_getCode
-anvil-a-1 | eth_gasPrice
-anvil-a-1 | eth_chainId
-anvil-a-1 | eth_getTransactionCount
-anvil-a-1 | eth_sendRawTransaction
-anvil-a-1 |
-anvil-a-1 | Transaction: 0x92befeefef33dc231e696f65a69502609452f2179fb1a5e9c95842081ab4c5d1
-anvil-a-1 | Gas used: 21328
-anvil-a-1 |
-anvil-a-1 | Block Number: 1
-anvil-a-1 | Block Hash: 0x0d2ebeea50b02beebfbe50a310871773fa186da61a386bb9dcb2d3df97a4bb5a
-anvil-a-1 | eth_blockNumber
-anvil-a-1 | Block Time: "Thu, 10 Oct 2024 08:42:30 +0000"
-anvil-a-1 |
-anvil-a-1 | eth_getBlockByNumber
-anvil-a-1 | eth_getTransactionReceipt
-anvil-a-1 | eth_blockNumber
-anvil-a-1 | eth_blockNumber
-anvil-a-1 | eth_blockNumber
-anvil-a-1 | eth_blockNumber
-anvil-a-1 | eth_gasPrice
-anvil-a-1 | eth_chainId
-anvil-a-1 | eth_sendRawTransaction
-anvil-a-1 |
-anvil-a-1 | Transaction: 0x5fac5e16d81fab79649b9d80752305eede9b718ba54cb6e1433372429088f1c9
-anvil-a-1 | Gas used: 21316
-anvil-a-1 |
-anvil-a-1 | Block Number: 2
-anvil-a-1 | Block Hash: 0xd95ca48a9c898f93a4f15b5d7321f7f82de9928e3f3f6f44caab4b33bd9d9fa7
-anvil-a-1 | Block Time: "Thu, 10 Oct 2024 08:43:00 +0000"
-anvil-a-1 |
+anvil-1 | Genesis Timestamp
+anvil-1 | ==================
+anvil-1 |
+anvil-1 | 1728549718
+anvil-1 |
+anvil-1 | Listening on 0.0.0.0:8545
+anvil-1 | eth_blockNumber
+anvil-1 | eth_getCode
+anvil-1 | eth_gasPrice
+anvil-1 | eth_chainId
+anvil-1 | eth_getTransactionCount
+anvil-1 | eth_sendRawTransaction
+anvil-1 |
+anvil-1 | Transaction: 0x92befeefef33dc231e696f65a69502609452f2179fb1a5e9c95842081ab4c5d1
+anvil-1 | Gas used: 21328
+anvil-1 |
+anvil-1 | Block Number: 1
+anvil-1 | Block Hash: 0x0d2ebeea50b02beebfbe50a310871773fa186da61a386bb9dcb2d3df97a4bb5a
+anvil-1 | eth_blockNumber
+anvil-1 | Block Time: "Thu, 10 Oct 2024 08:42:30 +0000"
+anvil-1 |
+anvil-1 | eth_getBlockByNumber
+anvil-1 | eth_getTransactionReceipt
+anvil-1 | eth_blockNumber
+anvil-1 | eth_blockNumber
+anvil-1 | eth_blockNumber
+anvil-1 | eth_blockNumber
+anvil-1 | eth_gasPrice
+anvil-1 | eth_chainId
+anvil-1 | eth_sendRawTransaction
+anvil-1 |
+anvil-1 | Transaction: 0x5fac5e16d81fab79649b9d80752305eede9b718ba54cb6e1433372429088f1c9
+anvil-1 | Gas used: 21316
+anvil-1 |
+anvil-1 | Block Number: 2
+anvil-1 | Block Hash: 0xd95ca48a9c898f93a4f15b5d7321f7f82de9928e3f3f6f44caab4b33bd9d9fa7
+anvil-1 | Block Time: "Thu, 10 Oct 2024 08:43:00 +0000"
+anvil-1 |
 ```
 
 ### Using a similar approach you can use CoinMarketCap wasm reporter
@@ -232,6 +232,19 @@ Expected result must be something like `67260166034648270000000` which is the pr
 >
 > - If the result is 0 that means the reporter is not running correctly.
 > - If you receive an error that could be due to the fact that the smart contract is not deployed on the blockchain.
+
+### Usign check_btc_price.sh
+
+We also provide a handy `check_btc_price.sh` with invokes the cast inside the running docker container of anvil. Feel free to copy/edit this script accouring to your needs.
+
+```
+$ ./check_btc_price.sh 
+UpgradeableProxy contract address 0xc04b335A75C5Fa14246152178f6834E3eBc2DC7C
+Anvil container id 4a0658166960
+BTC Price from contarct
+66323.5
+
+```
 
 ### Using `ethers.js`
 
