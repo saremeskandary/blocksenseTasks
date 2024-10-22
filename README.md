@@ -241,6 +241,355 @@ We have examples for interacting with `UpgradeableProxy` contract using `ethers.
 
 We have examples for interacting with `UpgradeableProxy` contract using `solidity` [here](https://docs.blocksense.network/docs/contracts/integration-guide/using-data-feeds/historic-data-feed#solidity).
 
+Here is a step-by-step guide, anyway. It uses `foundry`. It assumes that you have not changed the repo and are still running the revolut example.
+
+**step 1.** Create a new `foundry` project in a directory that is not inside a git repo:
+
+```
+forge init touch-bsn && cd touch-bsn
+```
+
+**step 2.** Write a contract that calls the BlockSense Network
+[HistoricalDataFeed](https://docs.blocksense.network/docs/contracts/integration-guide/using-data-feeds/historic-data-feed).
+As mentioned in the documentation, the contract that is really called is
+`UpgradeableProxy`. For more details follow the link.
+
+```
+cat > src/UpgradeableProxyConsumer.sol
+```
+
+Paste the following:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {ProxyCall} from "lib/ProxyCall.sol";
+
+/**
+ * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+contract UpgradeableProxyConsumer {
+    address public immutable dataFeedStore;
+
+    constructor(address feedAddress) {
+        dataFeedStore = feedAddress;
+    }
+
+    function getDataById(uint32 key) external view returns (uint256 value, uint64 timestamp) {
+        bytes32 data = ProxyCall._callDataFeed(dataFeedStore, abi.encodePacked(0x80000000 | key));
+
+        return (uint256(uint192(bytes24(data))), uint64(uint256(data)));
+    }
+
+    function getFeedAtCounter(uint32 key, uint32 counter) external view returns (uint256 value, uint64 timestamp) {
+        bytes32 data = ProxyCall._callDataFeed(dataFeedStore, abi.encodeWithSelector(bytes4(0x20000000 | key), counter));
+
+        return (uint256(uint192(bytes24(data))), uint64(uint256(data)));
+    }
+
+    function getLatestCounter(uint32 key) external view returns (uint32 counter) {
+        return uint32(ProxyCall._latestRound(key, dataFeedStore));
+    }
+
+    function getLatestRoundData(uint32 key) external view returns (int256 value, uint256 timestamp, uint80 counter) {
+        (counter, value, timestamp,,) = ProxyCall._latestRoundData(key, dataFeedStore);
+    }
+}
+```
+
+Make sure to press <Ctrl+D> to finish the paste.
+
+**libraries**
+
+For this to work, you would also need this library file:
+
+```
+cat > lib/ProxyCall.sol
+```
+
+Paste the following:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+/// @title ProxyCall
+/// @notice Library for calling dataFeedStore functions
+/// @dev Contains utility functions for calling gas efficiently dataFeedStore functions and decoding return data
+library ProxyCall {
+  /// @notice Gets the latest answer from the dataFeedStore
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @return answer The latest stored value after being decoded
+  function _latestAnswer(
+    uint32 key,
+    address dataFeedStore
+  ) internal view returns (int256) {
+    return
+      int256(
+        uint256(
+          uint192(
+            bytes24(
+              _callDataFeed(dataFeedStore, abi.encodePacked(0x80000000 | key))
+            )
+          )
+        )
+      );
+  }
+
+  /// @notice Gets the round data from the dataFeedStore
+  /// @param _roundId The round ID to retrieve data for
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @return roundId The round ID
+  /// @return answer The value stored for the feed at the given round ID
+  /// @return startedAt The timestamp when the value was stored
+  /// @return updatedAt Same as startedAt
+  /// @return answeredInRound Same as roundId
+  function _getRoundData(
+    uint80 _roundId,
+    uint32 key,
+    address dataFeedStore
+  )
+    internal
+    view
+    returns (uint80, int256 answer, uint256 startedAt, uint256, uint80)
+  {
+    (answer, startedAt) = _decodeData(
+      _callDataFeed(
+        dataFeedStore,
+        abi.encodeWithSelector(bytes4(0x20000000 | key), _roundId)
+      )
+    );
+
+    return (_roundId, answer, startedAt, startedAt, _roundId);
+  }
+
+  /// @notice Gets the latest round ID for a given feed from the dataFeedStore
+  /// @dev Using assembly achieves lower gas costs
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @return roundId The latest round ID
+  function _latestRound(
+    uint32 key,
+    address dataFeedStore
+  ) internal view returns (uint256 roundId) {
+    // using assembly staticcall costs less gas than using a view function
+    assembly {
+      // get free memory pointer
+      let ptr := mload(0x40)
+
+      // store selector in memory at location 0
+      mstore(0, shl(224, or(0x40000000, key)))
+
+      // call dataFeedStore with selector 0xc0000000 | key (4 bytes) and store return value (64 bytes) at memory location ptr
+      let success := staticcall(gas(), dataFeedStore, 0, 4, ptr, 64)
+
+      // revert if call failed
+      if iszero(success) {
+        revert(0, 0)
+      }
+
+      // load return value from memory at location ptr
+      // roundId is stored in the second 32 bytes of the return 64 bytes
+      roundId := mload(add(ptr, 32))
+    }
+  }
+
+  /// @notice Gets the latest round data for a given feed from the dataFeedStore
+  /// @dev Using assembly achieves lower gas costs
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @return roundId The latest round ID
+  /// @return answer The latest stored value after being decoded
+  /// @return startedAt The timestamp when the value was stored
+  /// @return updatedAt Same as startedAt
+  /// @return answeredInRound Same as roundId
+  function _latestRoundData(
+    uint32 key,
+    address dataFeedStore
+  )
+    internal
+    view
+    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256, uint80)
+  {
+    bytes32 returnData;
+
+    // using assembly staticcall costs less gas than using a view function
+    assembly {
+      // get free memory pointer
+      let ptr := mload(0x40)
+
+      // store selector in memory at location 0
+      mstore(0x00, shl(224, or(0xc0000000, key)))
+
+      // call dataFeedStore with selector 0xc0000000 | key (4 bytes) and store return value (64 bytes) at memory location ptr
+      let success := staticcall(gas(), dataFeedStore, 0x00, 4, ptr, 64)
+
+      // revert if call failed
+      if iszero(success) {
+        revert(0, 0)
+      }
+
+      // assign return value to returnData
+      returnData := mload(ptr)
+
+      // load return value from memory at location ptr
+      // roundId is stored in the second 32 bytes of the return 64 bytes
+      roundId := mload(add(ptr, 32))
+    }
+
+    (answer, startedAt) = _decodeData(returnData);
+
+    return (roundId, answer, startedAt, startedAt, roundId);
+  }
+
+  /// @notice Calls the dataFeedStore with the given data
+  /// @dev Using assembly achieves lower gas costs
+  /// Used as a call() function to dataFeedStore
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @param data The data to call the dataFeedStore with
+  /// @return returnData The return value from the dataFeedStore
+  function _callDataFeed(
+    address dataFeedStore,
+    bytes memory data
+  ) internal view returns (bytes32 returnData) {
+    // using assembly staticcall costs less gas than using a view function
+    assembly {
+      // get free memory pointer
+      let ptr := mload(0x40)
+
+      // call dataFeedStore with data and store return value (32 bytes) at memory location ptr
+      let success := staticcall(
+        gas(), // gas remaining
+        dataFeedStore, // address to call
+        add(data, 32), // location of data to call (skip first 32 bytes of data which is the length of data)
+        mload(data), // size of data to call
+        ptr, // where to store the return data
+        32 // how much data to store
+      )
+
+      // revert if call failed
+      if iszero(success) {
+        revert(0, 0)
+      }
+
+      // assign loaded return value at memory location ptr to returnData
+      returnData := mload(ptr)
+    }
+  }
+
+  /// @notice Decodes the return data from the dataFeedStore
+  /// @param data The data to decode
+  /// @return answer The value stored for the feed at the given round ID
+  /// @return timestamp The timestamp when the value was stored
+  function _decodeData(bytes32 data) internal pure returns (int256, uint256) {
+    return (int256(uint256(uint192(bytes24(data)))), uint64(uint256(data)));
+  }
+}
+```
+
+Make sure to press <Ctrl+D> to finish the paste.
+
+**step 3.** Build your smart contract:
+
+```
+forge build
+```
+
+This should work and the output should looks something like this:
+
+```
+[⠊] Compiling...
+[⠃] Installing Solc version 0.8.24
+[⠊] Successfully installed Solc 0.8.24
+[⠃] Installing Solc version 0.8.24
+[⠊] Successfully installed Solc 0.8.24
+[⠃] Compiling 31 files with 0.8.24
+[⠒] Solc 0.8.24 finished in 1.84s
+Compiler run successful!
+```
+
+**step 4.** Register your smart contract:
+
+Before you can register your smart contract, you need to have a place to register it to. Run the sandbox environment and inspect the output:
+
+```
+docker compose up
+```
+
+The anvil logs contain a list of private keys. Pick the seventh one, because seven is your lucky number (PRIVATE_KEY_FROM_ANVIL).
+
+```
+anvil-a-1     | Private Keys
+anvil-a-1     | ==================
+anvil-a-1     |
+anvil-a-1     | (0) 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+anvil-a-1     | (1) 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+anvil-a-1     | (2) 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+anvil-a-1     | (3) 0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
+anvil-a-1     | (4) 0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a
+anvil-a-1     | (5) 0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba
+anvil-a-1     | (6) 0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e
+anvil-a-1     | (7) 0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356 # PRIVATE_KEY_FROM_ANVIL
+anvil-a-1     | (8) 0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97
+anvil-a-1     | (9) 0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6
+```
+
+Also, inspect the logs and look for the address at which `scdeploy` deploys FeedRegistry (ADDRESS_OF_UPGRADEABLE_PROXY). The text looks something like this:
+
+```
+scdeploy-a-1  | Predicted address for 'UpgradeableProxy':  0xc04b335A75C5Fa14246152178f6834E3eBc2DC7C # ADDRESS_OF_UPGRADEABLE_PROXY
+```
+
+Now, take these two numbers and plug them in the correct places for the `forge create` command:
+
+```
+forge create --rpc-url http://0.0.0.0:8545 --private-key <PRIVATE_KEY_FROM_ANVIL> src/UpgradeableProxyConsumer.sol:UpgradeableProxyConsumer --constructor-args <ADDRESS_OF_UPGRADEABLE_PROXY>
+```
+
+Your smart contract should now be registered! You are given the address where it lives:
+
+```
+[⠊] Compiling...
+[⠒] Installing Solc version 0.8.24
+[⠘] Successfully installed Solc 0.8.24
+No files changed, compilation skipped
+Deployer: 0x14dC79964da2C08b23698B3D3cc7Ca32193d9955
+Deployed to: 0x81911707ED6aAe1fD5ee010dA4159c08fE4E850B # MY_CONTRACT_ADDRESS
+Transaction hash: 0xd4edced4e4333b3ff3432807e30b9c6205f52c1e7e5e0da31d37508551ad796e
+```
+
+**step 5.** Call your smart contract:
+
+Use `cast call` to call your smart contract:
+
+```
+cast call <MY_CONTRACT_ADDRESS> "getLatestRoundData(uint32)(int256,uint256,uint80)" 31 --rpc-url http://0.0.0.0:8545
+```
+
+31 is the id of the BTC/USD feed, as can be seen in `config/feeds_config.json`.
+
+You should now see latest round data for the BTC/USD pair stored in your
+Blocksense Network sandbox setup! It should look something like this:
+
+```
+$ cast call 0x88cc7Ed5261ab20B9b72A0c2325De2Aad590D88E "getLatestRoundData(uint32)(int256,uint256,uint80)" 31 --rpc-url http://0.0.0.0:8545
+66530468584445830000000 [6.653e22]
+1729595483 [1.729e9]
+42
+```
+
+In this output, the first number is the price, the second one is the timestamp,
+and the third one is the number of iterations (slots) of the sequencer in your
+local sandbox.
+
+If you'd like to see an example of how to call the `FeedRegistry` smart
+contract instead, see
+[SmartContract-Using-FeedRegistry.md](SmartContract-Using-FeedRegistry.md).
+
 ## Creating your own new Oracle Script
 
 This is the main task of this hackaton - to create your oracle script, feed data to the blockchain and do something interesting or useful with it. To achieve your goal we suggest to use copy-paste-edit strategy with one of our existing oracles.
