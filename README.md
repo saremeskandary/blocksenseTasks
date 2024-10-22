@@ -249,10 +249,13 @@ Here is a step-by-step guide, anyway. It uses `foundry`. It assumes that you hav
 forge init touch-bsn && cd touch-bsn
 ```
 
-**step 2.** Write a contract that calls the BlockSense Network [FeedRegistry](https://docs.blocksense.network/docs/contracts/integration-guide/using-data-feeds/feed-registry):
+**step 2.** Write a contract that calls the BlockSense Network
+[HistoricalDataFeed](https://docs.blocksense.network/docs/contracts/integration-guide/using-data-feeds/historic-data-feed).
+As mentioned in the documentation, the contract that is really called is
+`UpgradeableProxy`. For more details follow the link.
 
 ```
-cat > src/RegistryConsumer.sol
+cat > src/UpgradeableProxyConsumer.sol
 ```
 
 Paste the following:
@@ -261,315 +264,234 @@ Paste the following:
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import 'interfaces/IFeedRegistry.sol';
+import {ProxyCall} from "lib/ProxyCall.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-contract RegistryConsumer {
-  IFeedRegistry public immutable registry;
+contract UpgradeableProxyConsumer {
+    address public immutable dataFeedStore;
 
-  constructor(address _registry) {
-    registry = IFeedRegistry(_registry);
-  }
+    constructor(address feedAddress) {
+        dataFeedStore = feedAddress;
+    }
 
-  function getDecimals(
-    address base,
-    address quote
-  ) external view returns (uint8 decimals) {
-    return registry.decimals(base, quote);
-  }
+    function getDataById(uint32 key) external view returns (uint256 value, uint64 timestamp) {
+        bytes32 data = ProxyCall._callDataFeed(dataFeedStore, abi.encodePacked(0x80000000 | key));
 
-  function getDescription(
-    address base,
-    address quote
-  ) external view returns (string memory description) {
-    return registry.description(base, quote);
-  }
+        return (uint256(uint192(bytes24(data))), uint64(uint256(data)));
+    }
 
-  function getLatestAnswer(
-    address base,
-    address quote
-  ) external view returns (uint256 asnwer) {
-    return uint256(registry.latestAnswer(base, quote));
-  }
+    function getFeedAtCounter(uint32 key, uint32 counter) external view returns (uint256 value, uint64 timestamp) {
+        bytes32 data = ProxyCall._callDataFeed(dataFeedStore, abi.encodeWithSelector(bytes4(0x20000000 | key), counter));
 
-  function getLatestRound(
-    address base,
-    address quote
-  ) external view returns (uint256 roundId) {
-    return registry.latestRound(base, quote);
-  }
+        return (uint256(uint192(bytes24(data))), uint64(uint256(data)));
+    }
 
-  function getRoundData(
-    address base,
-    address quote,
-    uint80 roundId
-  )
-    external
-    view
-    returns (
-      uint80 roundId_,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    )
-  {
-    return registry.getRoundData(base, quote, roundId);
-  }
+    function getLatestCounter(uint32 key) external view returns (uint32 counter) {
+        return uint32(ProxyCall._latestRound(key, dataFeedStore));
+    }
 
-  function getLatestRoundData(
-    address base,
-    address quote
-  )
-    external
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    )
-  {
-    return registry.latestRoundData(base, quote);
-  }
-
-  function getFeed(
-    address base,
-    address quote
-  ) external view returns (IChainlinkAggregator feed) {
-    return registry.getFeed(base, quote);
-  }
+    function getLatestRoundData(uint32 key) external view returns (int256 value, uint256 timestamp, uint80 counter) {
+        (counter, value, timestamp,,) = ProxyCall._latestRoundData(key, dataFeedStore);
+    }
 }
 ```
 
-**interfaces**
+Make sure to press <Ctrl+D> to finish the paste.
 
-For this to work, you would also need these three interface files:
+**libraries**
+
+For this to work, you would also need this library file:
 
 ```
-mkdir interfaces && mkdir interfaces/chainlink
-cat > interfaces/IFeedRegistry.sol
+cat > lib/ProxyCall.sol
 ```
 
-**interface 1.** Paste the following:
+Paste the following:
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IChainlinkFeedRegistry, IChainlinkAggregator} from './chainlink/IChainlinkFeedRegistry.sol';
-
-interface IFeedRegistry is IChainlinkFeedRegistry {
-  struct FeedData {
-    IChainlinkAggregator aggregator;
-    uint32 key;
-    uint8 decimals;
-    string description;
+/// @title ProxyCall
+/// @notice Library for calling dataFeedStore functions
+/// @dev Contains utility functions for calling gas efficiently dataFeedStore functions and decoding return data
+library ProxyCall {
+  /// @notice Gets the latest answer from the dataFeedStore
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @return answer The latest stored value after being decoded
+  function _latestAnswer(
+    uint32 key,
+    address dataFeedStore
+  ) internal view returns (int256) {
+    return
+      int256(
+        uint256(
+          uint192(
+            bytes24(
+              _callDataFeed(dataFeedStore, abi.encodePacked(0x80000000 | key))
+            )
+          )
+        )
+      );
   }
 
-  struct Feed {
-    address base;
-    address quote;
-    address feed;
-  }
-
-  error OnlyOwner();
-
-  /// @notice Contract owner
-  /// @return owner The address of the owner
-  function OWNER() external view returns (address);
-
-  /// @notice Set the feed for a given pair
-  /// @dev Stores immutable values (decimals, key, description) and contract address from ChainlinkProxy
-  /// @param feeds Array of base, quote and feed address data
-  function setFeeds(Feed[] calldata feeds) external;
-}
-```
-
-**interface 2.** 
-
-```
-cat > interfaces/chainlink/IChainlinkFeedRegistry.sol
-```
-
-Paste the following:
-
-```solidity
-/**
- * SPDX-FileCopyrightText: Copyright (c) 2021 SmartContract ChainLink Limited SEZC
- *
- * SPDX-License-Identifier: MIT
- */
-pragma solidity ^0.8.24;
-
-import {IChainlinkAggregator} from './IChainlinkAggregator.sol';
-
-interface IChainlinkFeedRegistry {
-  /// @notice Get decimals for a feed pair
-  /// @param base The base asset of the feed
-  /// @param quote The quote asset of the feed
-  /// @return decimals The decimals of the feed pair
-  function decimals(address base, address quote) external view returns (uint8);
-
-  /// @notice Get description for a feed pair
-  /// @param base The base asset of the feed
-  /// @param quote The quote asset of the feed
-  /// @return description The description of the feed pair
-  function description(
-    address base,
-    address quote
-  ) external view returns (string memory);
-
-  /// @notice Get the latest answer for a feed pair
-  /// @param base The base asset of the feed
-  /// @param quote The quote asset of the feed
-  /// @return answer The value sotred for the feed pair
-  function latestAnswer(
-    address base,
-    address quote
-  ) external view returns (int256 answer);
-
-  /// @notice Get the latest round ID for a feed pair
-  /// @param base The base asset of the feed
-  /// @param quote The quote asset of the feed
-  /// @return roundId The latest round ID
-  function latestRound(
-    address base,
-    address quote
-  ) external view returns (uint256 roundId);
-
-  /// @notice Get the round data for a feed pair at a given round ID
-  /// @param base The base asset of the feed
-  /// @param quote The quote asset of the feed
+  /// @notice Gets the round data from the dataFeedStore
   /// @param _roundId The round ID to retrieve data for
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
   /// @return roundId The round ID
   /// @return answer The value stored for the feed at the given round ID
   /// @return startedAt The timestamp when the value was stored
   /// @return updatedAt Same as startedAt
   /// @return answeredInRound Same as roundId
-  function getRoundData(
-    address base,
-    address quote,
-    uint80 _roundId
+  function _getRoundData(
+    uint80 _roundId,
+    uint32 key,
+    address dataFeedStore
   )
-    external
+    internal
     view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
+    returns (uint80, int256 answer, uint256 startedAt, uint256, uint80)
+  {
+    (answer, startedAt) = _decodeData(
+      _callDataFeed(
+        dataFeedStore,
+        abi.encodeWithSelector(bytes4(0x20000000 | key), _roundId)
+      )
     );
 
-  /// @notice Get the latest round data for a feed pair
-  /// @param base The base asset of the feed
-  /// @param quote The quote asset of the feed
-  /// @return roundId The latest round ID stored for the feed pair
-  /// @return answer The latest value stored for the feed pair
+    return (_roundId, answer, startedAt, startedAt, _roundId);
+  }
+
+  /// @notice Gets the latest round ID for a given feed from the dataFeedStore
+  /// @dev Using assembly achieves lower gas costs
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @return roundId The latest round ID
+  function _latestRound(
+    uint32 key,
+    address dataFeedStore
+  ) internal view returns (uint256 roundId) {
+    // using assembly staticcall costs less gas than using a view function
+    assembly {
+      // get free memory pointer
+      let ptr := mload(0x40)
+
+      // store selector in memory at location 0
+      mstore(0, shl(224, or(0x40000000, key)))
+
+      // call dataFeedStore with selector 0xc0000000 | key (4 bytes) and store return value (64 bytes) at memory location ptr
+      let success := staticcall(gas(), dataFeedStore, 0, 4, ptr, 64)
+
+      // revert if call failed
+      if iszero(success) {
+        revert(0, 0)
+      }
+
+      // load return value from memory at location ptr
+      // roundId is stored in the second 32 bytes of the return 64 bytes
+      roundId := mload(add(ptr, 32))
+    }
+  }
+
+  /// @notice Gets the latest round data for a given feed from the dataFeedStore
+  /// @dev Using assembly achieves lower gas costs
+  /// @param key The key ID for the feed
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @return roundId The latest round ID
+  /// @return answer The latest stored value after being decoded
   /// @return startedAt The timestamp when the value was stored
   /// @return updatedAt Same as startedAt
   /// @return answeredInRound Same as roundId
-  function latestRoundData(
-    address base,
-    address quote
+  function _latestRoundData(
+    uint32 key,
+    address dataFeedStore
   )
-    external
+    internal
     view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    );
+    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256, uint80)
+  {
+    bytes32 returnData;
 
-  /// @notice Get the ChainlinkProxy contract for a feed pair
-  /// @param base The base asset of the feed
-  /// @param quote The quote asset of the feed
-  /// @return aggregator The ChainlinkProxy contract given pair
-  function getFeed(
-    address base,
-    address quote
-  ) external view returns (IChainlinkAggregator aggregator);
+    // using assembly staticcall costs less gas than using a view function
+    assembly {
+      // get free memory pointer
+      let ptr := mload(0x40)
+
+      // store selector in memory at location 0
+      mstore(0x00, shl(224, or(0xc0000000, key)))
+
+      // call dataFeedStore with selector 0xc0000000 | key (4 bytes) and store return value (64 bytes) at memory location ptr
+      let success := staticcall(gas(), dataFeedStore, 0x00, 4, ptr, 64)
+
+      // revert if call failed
+      if iszero(success) {
+        revert(0, 0)
+      }
+
+      // assign return value to returnData
+      returnData := mload(ptr)
+
+      // load return value from memory at location ptr
+      // roundId is stored in the second 32 bytes of the return 64 bytes
+      roundId := mload(add(ptr, 32))
+    }
+
+    (answer, startedAt) = _decodeData(returnData);
+
+    return (roundId, answer, startedAt, startedAt, roundId);
+  }
+
+  /// @notice Calls the dataFeedStore with the given data
+  /// @dev Using assembly achieves lower gas costs
+  /// Used as a call() function to dataFeedStore
+  /// @param dataFeedStore The address of the dataFeedStore contract
+  /// @param data The data to call the dataFeedStore with
+  /// @return returnData The return value from the dataFeedStore
+  function _callDataFeed(
+    address dataFeedStore,
+    bytes memory data
+  ) internal view returns (bytes32 returnData) {
+    // using assembly staticcall costs less gas than using a view function
+    assembly {
+      // get free memory pointer
+      let ptr := mload(0x40)
+
+      // call dataFeedStore with data and store return value (32 bytes) at memory location ptr
+      let success := staticcall(
+        gas(), // gas remaining
+        dataFeedStore, // address to call
+        add(data, 32), // location of data to call (skip first 32 bytes of data which is the length of data)
+        mload(data), // size of data to call
+        ptr, // where to store the return data
+        32 // how much data to store
+      )
+
+      // revert if call failed
+      if iszero(success) {
+        revert(0, 0)
+      }
+
+      // assign loaded return value at memory location ptr to returnData
+      returnData := mload(ptr)
+    }
+  }
+
+  /// @notice Decodes the return data from the dataFeedStore
+  /// @param data The data to decode
+  /// @return answer The value stored for the feed at the given round ID
+  /// @return timestamp The timestamp when the value was stored
+  function _decodeData(bytes32 data) internal pure returns (int256, uint256) {
+    return (int256(uint256(uint192(bytes24(data)))), uint64(uint256(data)));
+  }
 }
 ```
 
-**interface 3.** 
-
-```
-cat > interfaces/chainlink/IChainlinkAggregator.sol
-```
-
-Paste the following:
-
-```solidity
-/**
- * SPDX-FileCopyrightText: Copyright (c) 2021 SmartContract ChainLink Limited SEZC
- *
- * SPDX-License-Identifier: MIT
- */
-pragma solidity ^0.8.24;
-
-interface IChainlinkAggregator {
-  /// @notice Decimals for the feed data
-  /// @return decimals The decimals of the feed
-  function decimals() external view returns (uint8);
-
-  /// @notice Description text for the feed data
-  /// @return description The description of the feed
-  function description() external view returns (string memory);
-
-  /// @notice Get the latest answer for the feed
-  /// @return answer The latest value stored
-  function latestAnswer() external view returns (int256);
-
-  /// @notice Get the latest round ID for the feed
-  /// @return roundId The latest round ID
-  function latestRound() external view returns (uint256);
-
-  /// @notice Get the data for a round at a given round ID
-  /// @param _roundId The round ID to retrieve the data for
-  /// @return roundId The round ID
-  /// @return answer The value stored for the round
-  /// @return startedAt Timestamp of when the value was stored
-  /// @return updatedAt Same as startedAt
-  /// @return answeredInRound Same as roundId
-  function getRoundData(
-    uint80 _roundId
-  )
-    external
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    );
-
-  /// @notice Get the latest round data available
-  /// @return roundId The latest round ID for the feed
-  /// @return answer The value stored for the round
-  /// @return startedAt Timestamp of when the value was stored
-  /// @return updatedAt Same as startedAt
-  /// @return answeredInRound Same as roundId
-  function latestRoundData()
-    external
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    );
-}
-```
+Make sure to press <Ctrl+D> to finish the paste.
 
 **step 3.** Build your smart contract:
 
@@ -616,16 +538,16 @@ anvil-a-1     | (8) 0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620e
 anvil-a-1     | (9) 0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6
 ```
 
-Also, inspect the logs and look for the address at which `scdeploy` deploys FeedRegistry (ADDRESS_OF_FEED_REGISTRY). The text looks something like this:
+Also, inspect the logs and look for the address at which `scdeploy` deploys FeedRegistry (ADDRESS_OF_UPGRADEABLE_PROXY). The text looks something like this:
 
 ```
-scdeploy-a-1  | Predicted address for 'FeedRegistry':  0x315980541F03c5d2a32813F66AdF07b13D09dd40 # ADDRESS_OF_FEED_REGISTRY
+scdeploy-a-1  | Predicted address for 'UpgradeableProxy':  0xc04b335A75C5Fa14246152178f6834E3eBc2DC7C # ADDRESS_OF_UPGRADEABLE_PROXY
 ```
 
 Now, take these two numbers and plug them in the correct places for the `forge create` command:
 
 ```
-forge create --rpc-url http://0.0.0.0:8545 --private-key <PRIVATE_KEY_FROM_ANVIL> src/RegistryConsumer.sol:RegistryConsumer --constructor-args <ADDRESS_OF_FEED_REGISTRY>
+forge create --rpc-url http://0.0.0.0:8545 --private-key <PRIVATE_KEY_FROM_ANVIL> src/UpgradeableProxyConsumer.sol:UpgradeableProxyConsumer --constructor-args <ADDRESS_OF_UPGRADEABLE_PROXY>
 ```
 
 Your smart contract should now be registered! You are given the address where it lives:
@@ -645,21 +567,28 @@ Transaction hash: 0xd4edced4e4333b3ff3432807e30b9c6205f52c1e7e5e0da31d37508551ad
 Use `cast call` to call your smart contract:
 
 ```
-cast call <MY_CONTRACT_ADDRESS> "getLatestRoundData(address,address)(uint80,int256,uint256,uint256,uint80)" <BTC_REF> <USD_REF> --rpc-url http://0.0.0.0:8545
+cast call <MY_CONTRACT_ADDRESS> "getLatestRoundData(uint32)(int256,uint256,uint80)" 31 --rpc-url http://0.0.0.0:8545
 ```
 
-BTC_REF is 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB. USD_REF is 0x0000000000000000000000000000000000000348, because fiat currencies follow [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217).
+31 is the id of the BTC/USD feed, as can be seen in `config/feeds_config.json`.
 
-You should now see latest round data for the BTC/USD pair stored in your Blocksense Network sandbox setup! It should look something like this:
+You should now see latest round data for the BTC/USD pair stored in your
+Blocksense Network sandbox setup! It should look something like this:
 
 ```
-$ cast call 0x81911707ED6aAe1fD5ee010dA4159c08fE4E850B "getLatestRoundData(address,address)(uint80,int256,uint256,uint256,uint80)" 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB 0x0000000000000000000000000000000000000348 --rpc-url http://0.0.0.0:8545
-1
-66525006260781620000000 [6.652e22]
-1729530081 [1.729e9]
-1729530081 [1.729e9]
-1
+$ cast call 0x88cc7Ed5261ab20B9b72A0c2325De2Aad590D88E "getLatestRoundData(uint32)(int256,uint256,uint80)" 31 --rpc-url http://0.0.0.0:8545
+66530468584445830000000 [6.653e22]
+1729595483 [1.729e9]
+42
 ```
+
+In this output, the first number is the price, the second one is the timestamp,
+and the third one is the number of iterations (slots) of the sequencer in your
+local sandbox.
+
+If you'd like to see an example of how to call the `FeedRegistry` smart
+contract instead, see
+[SmartContract-Using-FeedRegistry.md](SmartContract-Using-FeedRegistry.md).
 
 ## Creating your own new Oracle Script
 
