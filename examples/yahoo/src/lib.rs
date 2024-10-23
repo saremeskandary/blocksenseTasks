@@ -54,9 +54,6 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
     let mut req = Request::builder();
     req.method(Method::Get);
     req.uri(url);
-    //TODO(adikov): Implement API key as capability of the reporter and add it to the header
-    //in the oracle trigger
-
     // Please provide your own API key until capabilities are implemented.
     req.header(
         "x-api-key",
@@ -70,6 +67,7 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
     req.header("Accepts", "application/json");
 
     let req = req.build();
+    // Fetch data for each needed data feed from Yahoo API
     let resp: Response = send(req).await?;
 
     let body = resp.into_body();
@@ -81,6 +79,7 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
         .quote_response
         .ok_or(anyhow::anyhow!("No Yahoo response."))?;
 
+    // Iterate through all the data feeds that would be served.
     for (feed_id, data) in resources.iter() {
         let position = quote_response
             .result
@@ -109,7 +108,6 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
                     "Yahoo data feed with symbol {} is not found",
                     data.yf_symbol
                 );
-                //TODO: Start reporting error.
                 DataFeedResult {
                     id: feed_id.clone(),
                     value: DataFeedResultValue::Error(error),
@@ -117,13 +115,13 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
             }
         });
     }
-
+    // Print symbols that were not consumed because there is no feed for them
     for yahoo in quote_response.result.iter() {
         println!(
             "Yahoo response with symbol {} wasn't consumed",
             yahoo.symbol
         );
     }
-
+    // Return payload to be pushed to sequencer
     Ok(payload)
 }
