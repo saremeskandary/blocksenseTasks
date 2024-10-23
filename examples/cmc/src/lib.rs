@@ -67,6 +67,7 @@ pub struct CmcResource {
 async fn oracle_request(settings: Settings) -> Result<Payload> {
     let mut resources: HashMap<String, CmcResource> = HashMap::new();
     let mut ids: Vec<String> = vec![];
+    // Compose one query to CMC api for all data feeds
     for feed in settings.data_feeds.iter() {
         let data: CmcResource = serde_json::from_str(&feed.data)?;
         resources.insert(feed.id.clone(), data.clone());
@@ -81,10 +82,7 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
     let mut req = Request::builder();
     req.method(Method::Get);
     req.uri(url);
-    //TODO(adikov): Implement API key as capability of the reporter and add it to the header
-    //in the oracle trigger
-
-    // Please provide your own API key until capabilities are implemented.
+    // Properly set the headers of the GET request including API KEY.
     req.header(
         "X-CMC_PRO_API_KEY",
         settings
@@ -97,14 +95,17 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
     req.header("Accepts", "application/json");
 
     let req = req.build();
+    // Fetch data for each needed data feed from CMC API
     let resp: Response = send(req).await?;
 
     let body = resp.into_body();
     let string = String::from_utf8(body)?;
+    // Get the body of the response and parse it using serde_json crate.
     let value: Root = serde_json::from_str(&string)?;
     println!("CMC Response = `{}`", &string);
     let mut payload: Payload = Payload::new();
-
+    
+    // Iterate through all the data feeds that would be served.
     for (feed_id, data) in resources.iter() {
         payload.values.push(match value.data.get(&data.cmc_id) {
             Some(cmc) => {
@@ -131,6 +132,6 @@ async fn oracle_request(settings: Settings) -> Result<Payload> {
             }
         });
     }
-
+    // Return payload to be pushed to sequencer
     Ok(payload)
 }
