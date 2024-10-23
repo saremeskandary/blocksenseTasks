@@ -21,7 +21,9 @@
       "resources": {
         "cmc_id": 1,
         "cmc_quote": "BTC"
-      }
+      },
+      "value_type": "Numerical",
+      "aggregate_type": "Median"
     },
     {
       "id": 47,
@@ -44,7 +46,9 @@
       "resources": {
         "cmc_id": 1027,
         "cmc_quote": "ETH"
-      }
+      },
+      "value_type": "Numerical",
+      "aggregate_type": "Median"
     },
     {
       "id": 253,
@@ -66,7 +70,33 @@
       },
       "resources": {
         "yf_symbol": "EURUSD=X"
-      }
+      },
+      "value_type": "Numerical",
+      "aggregate_type": "Median"
+    },
+    {
+      "id": 222,
+      "name": "Text",
+      "fullName": "Some text",
+      "description": "Hello World",
+      "decimals": 8,
+      "report_interval_ms": 30000,
+      "quorum_percentage": 1,
+      "type": "Forex",
+      "script": "YahooFinance",
+      "pair": {
+        "base": "EUR",
+        "quote": "USD"
+      },
+      "first_report_start_time": {
+        "secs_since_epoch": 0,
+        "nanos_since_epoch": 0
+      },
+      "resources": {
+        "yf_symbol": "EURUSD=X"
+      },
+      "value_type": "Text",
+      "aggregate_type": "Median"
     }
   ]
 }
