@@ -190,6 +190,16 @@ You can now start docker compose again.
 
 If everything is setup correctly you will see anvil reporting published transactions.
 
+### An oracle script that reports text
+
+There is the possibility for the oracle script to write string data. To see an example in action, build the `string_oracle` project the same way as the others.
+
+```bash
+cd examples/string_oracle && cargo update && cargo build --target wasm32-wasi --release
+```
+
+Now, you can change `docker-compose.yaml` to switch to the string oracle like you did before for the others, and a string will be reported on feed id 222, alongside the price feeds from the previous examples (see the source code).
+
 ## Reading on-chain data
 
 Once having all set up and running you can read the data from the blockchain.
@@ -247,7 +257,7 @@ BTC/USD Price from contract
 ETH/USD Price from contract
 2516.29
 
-ETH/USD Price from contract
+EUR/USD Price from contract
 1.07646
 
 Raw bytes from contract
