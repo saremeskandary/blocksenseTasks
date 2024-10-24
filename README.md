@@ -2,7 +2,7 @@
 
 Welcome to Encode London 25-27 Oct Hackaton. To participate in hackaton you need to setup blocksense network in your local machine.
 
-Install git, [docker compose](https://docs.docker.com/compose/install/) & [rust](https://www.rust-lang.org/tools/install). Currently we only support rust for writing oracle scripts. It's technologically possible to use other languages, but this is out of the scope for this hackaton because our SDK is only available for rust. So you need to get rusty !
+Install git, [docker compose](https://docs.docker.com/compose/install/) & [rust](https://www.rust-lang.org/tools/install). Currently we only support rust for writing oracle scripts. It's technologically possible to use other languages, but this is out of the scope for this hackaton because our SDK is only available for rust. So you need to get rusty!
 Your first goal is to run one of our oracle script to verify all services are running and set up correctly.
 
 1. Clone this repository:
@@ -49,7 +49,7 @@ Now go to root directory of this repository and start all the containers:
 docker compose up
 ```
 
-This will launch 2 local ETH blockchains (anvil), blocksense sequencer service which is responsible for publishing oracle scripts data feeds to the ETH blockchain and one reporter which will execute your oracle script and push its data feed to sequencer.
+This will launch a local ETH blockchain (anvil), blocksense sequencer service which is responsible for publishing oracle scripts data feeds to the ETH blockchain and a reporter which will execute your oracle script and push its data feed to sequencer.
 
 ```mermaid
 sequenceDiagram
