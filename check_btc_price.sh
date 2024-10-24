@@ -15,7 +15,7 @@ echo "ETH/USD Price from contract"
 docker exec -it ${ANVIL_CONTAINER} sh -c "cast call ${CONTACT} --data 0x800000${ETH_FEED_ID} --rpc-url http://127.0.0.1:8545 |  cut -c1-50 | cast to-dec" | awk '{print ($1 * 1e-18) }' && echo '' 
 
 EURUSD_FEED_ID="fd" # 47 feed id in HEX
-echo "ETH/USD Price from contract"
+echo "EUR/USD Price from contract"
 docker exec -it ${ANVIL_CONTAINER} sh -c "cast call ${CONTACT} --data 0x800000${EURUSD_FEED_ID} --rpc-url http://127.0.0.1:8545 |  cut -c1-50 | cast to-dec" | awk '{print ($1 * 1e-18) }' && echo '' 
 
 TEXT_FEED_ID="de" # 222 feed id in HEX
