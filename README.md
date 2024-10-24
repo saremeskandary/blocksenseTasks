@@ -1,9 +1,7 @@
 # Repository for Encode London 25-27 Oct Hackaton
 
-Table of Contents
-=================
+## Table of Contents
 
-* [Repository for Encode London 25-27 Oct Hackaton](#repository-for-encode-london-25-27-oct-hackaton)
    * [Running an available Oracle Script](#running-an-available-oracle-script)
       * [Run wasm revolut reporter](#run-wasm-revolut-reporter)
       * [Run wasm yahoo reporter](#run-wasm-yahoo-reporter)
@@ -11,7 +9,7 @@ Table of Contents
       * [An oracle script that reports text](#an-oracle-script-that-reports-text)
    * [Reading on-chain data](#reading-on-chain-data)
       * [Using cast](#using-cast)
-      * [Usign check_oracle_data.sh](#usign-check_oracle_datash)
+      * [Using check_oracle_data.sh](#using-check_oracle_datash)
       * [Using ethers.js](#using-ethersjs)
       * [Using solidity](#using-solidity)
    * [Creating your own new Oracle Script](#creating-your-own-new-oracle-script)
@@ -259,7 +257,7 @@ Expected result must be something like `67260166034648270000000` which is the pr
 > - If the result is 0 that means the reporter is not running correctly.
 > - If you receive an error that could be due to the fact that the smart contract is not deployed on the blockchain.
 
-### Usign check_oracle_data.sh
+### Using check_oracle_data.sh
 
 We also provide a handy `check_oracle_data.sh` with invokes the cast inside the running docker container of anvil. Feel free to copy/edit this script accouring to your needs.
 
