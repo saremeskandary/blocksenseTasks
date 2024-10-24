@@ -99,7 +99,7 @@ entrypoint:
   ["/bin/sh", "-c", "cd /usr/local/blocksense/oracles/yahoo && /spin up"]
 ```
 
-Start docker compose again. That will start 2 anvil instances, one sequencer and a yahoo reporter
+Start docker compose again. That will start an anvil instance, one sequencer and a yahoo reporter
 
 ```bash
   docker compose down # if you have already running containers
