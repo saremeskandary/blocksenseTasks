@@ -625,7 +625,7 @@ You should now see latest round data for the BTC/USD pair stored in your
 Blocksense Network sandbox setup! It should look something like this:
 
 ```
-$ cast call 0x88cc7Ed5261ab20B9b72A0c2325De2Aad590D88E "getLatestRoundData(uint32)(int256,uint256,uint80)" 31 --rpc-url http://0.0.0.0:8545
+$ cast call 0x81911707ED6aAe1fD5ee010dA4159c08fE4E850B "getLatestRoundData(uint32)(int256,uint256,uint80)" 31 --rpc-url http://0.0.0.0:8545
 66530468584445830000000 [6.653e22]
 1729595483 [1.729e9]
 42
