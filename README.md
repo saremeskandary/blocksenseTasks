@@ -240,10 +240,22 @@ We also provide a handy `check_btc_price.sh` with invokes the cast inside the ru
 ```
 $ ./check_btc_price.sh 
 UpgradeableProxy contract address 0xc04b335A75C5Fa14246152178f6834E3eBc2DC7C
-Anvil container id 4a0658166960
-BTC Price from contarct
-66323.5
+Anvil container id 61f12227a79a
+BTC/USD Price from contract
+66327.8
 
+ETH/USD Price from contract
+2516.29
+
+ETH/USD Price from contract
+1.07646
+
+Raw bytes from contract
+0x48656c6c6f20617765736f6d6520426c6f636b636861696e
+
+
+Text from contract
+Hello awesome Blockchain
 ```
 
 ### Using `ethers.js`
