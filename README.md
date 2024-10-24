@@ -243,12 +243,12 @@ Expected result must be something like `67260166034648270000000` which is the pr
 > - If the result is 0 that means the reporter is not running correctly.
 > - If you receive an error that could be due to the fact that the smart contract is not deployed on the blockchain.
 
-### Usign check_btc_price.sh
+### Usign check_oracle_data.sh
 
-We also provide a handy `check_btc_price.sh` with invokes the cast inside the running docker container of anvil. Feel free to copy/edit this script accouring to your needs.
+We also provide a handy `check_oracle_data.sh` with invokes the cast inside the running docker container of anvil. Feel free to copy/edit this script accouring to your needs.
 
 ```
-$ ./check_btc_price.sh 
+$ ./check_oracle_data.sh 
 UpgradeableProxy contract address 0xc04b335A75C5Fa14246152178f6834E3eBc2DC7C
 Anvil container id 61f12227a79a
 BTC/USD Price from contract
@@ -641,8 +641,8 @@ edit `my_oracle/spin.toml`:
 spin_manifest_version = 2
 
 [application]
-authors = ["Your names"]
-name = "Blocksense Oracle Hackaton"
+authors = ["Your Names"]
+name = "Blocksense Oracle Hackathon"
 version = "0.1.0"
 
 [application.trigger.settings]
@@ -656,17 +656,20 @@ component = "your-awesome-script"
 
 [[trigger.oracle.data_feeds]]
 id = "47" #UPDATE DATA FEEDS IF NEEDED
-data = "USD/ETH"
+data = "ETHUSD"
 
 [[trigger.oracle.data_feeds]]
 id = "31"
-data = "USD/BTC"
+data = "BTCUSD"
+
+[[trigger.oracle.data_feeds]]
+id = "253"
+data = "EURUSD"
+
 
 [component.your-awesome-script]
-source = "target/wasm32-wasi/release/my-awesome-oracle.wasm"
-allowed_outbound_hosts = [
-"https://awesome-data-feed.com",
-]
+source = "target/wasm32-wasi/release/my_awesome_oracle.wasm"
+allowed_outbound_hosts = ["https://www.awesome-data-feed.com"]
 [component.your-awesome-script.build]
 command = "cargo build --target wasm32-wasi --release"
 ```
