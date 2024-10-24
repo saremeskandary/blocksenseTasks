@@ -348,7 +348,7 @@ contract UpgradeableProxyConsumer {
 }
 ```
 
-Make sure to press <Ctrl+D> to finish the paste.
+Make sure to press <Ctrl/Cmd+D> to finish the paste.
 
 **libraries**
 
@@ -540,7 +540,7 @@ library ProxyCall {
 }
 ```
 
-Make sure to press <Ctrl+D> to finish the paste.
+Make sure to press <Ctrl/Cmd+D> to finish the paste.
 
 **step 3.** Build your smart contract:
 
