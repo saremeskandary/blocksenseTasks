@@ -1,5 +1,21 @@
 # Repository for Encode London 25-27 Oct Hackaton
 
+Table of Contents
+=================
+
+* [Repository for Encode London 25-27 Oct Hackaton](#repository-for-encode-london-25-27-oct-hackaton)
+   * [Running an available Oracle Script](#running-an-available-oracle-script)
+      * [Run wasm revolut reporter](#run-wasm-revolut-reporter)
+      * [Run wasm yahoo reporter](#run-wasm-yahoo-reporter)
+      * [Using a similar approach you can use CoinMarketCap wasm reporter](#using-a-similar-approach-you-can-use-coinmarketcap-wasm-reporter)
+      * [An oracle script that reports text](#an-oracle-script-that-reports-text)
+   * [Reading on-chain data](#reading-on-chain-data)
+      * [Using cast](#using-cast)
+      * [Usign check_oracle_data.sh](#usign-check_oracle_datash)
+      * [Using ethers.js](#using-ethersjs)
+      * [Using solidity](#using-solidity)
+   * [Creating your own new Oracle Script](#creating-your-own-new-oracle-script)
+
 Welcome to Encode London 25-27 Oct Hackaton. To participate in hackaton you need to setup blocksense network in your local machine.
 
 Install git, [docker compose](https://docs.docker.com/compose/install/) & [rust](https://www.rust-lang.org/tools/install). Currently we only support rust for writing oracle scripts. It's technologically possible to use other languages, but this is out of the scope for this hackaton because our SDK is only available for rust. So you need to get rusty!
