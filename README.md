@@ -593,7 +593,7 @@ Also, inspect the logs and look for the address at which `scdeploy` deploys Feed
 scdeploy-a-1  | Predicted address for 'UpgradeableProxy':  0xc04b335A75C5Fa14246152178f6834E3eBc2DC7C # ADDRESS_OF_UPGRADEABLE_PROXY
 ```
 
-Now, take these two numbers and plug them in the correct places for the `forge create` command:
+Now, take these two addresses and plug them in the correct places for the `forge create` command:
 
 ```
 forge create --rpc-url http://0.0.0.0:8545 --private-key <PRIVATE_KEY_FROM_ANVIL> src/UpgradeableProxyConsumer.sol:UpgradeableProxyConsumer --constructor-args <ADDRESS_OF_UPGRADEABLE_PROXY>
