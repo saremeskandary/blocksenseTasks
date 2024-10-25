@@ -646,7 +646,7 @@ This is the main task of this hackaton - to create your oracle script, feed data
 For example:
 
 ```bash
-cd examples && cp -r revolut my_oracle
+(cd examples && cp -r string_oracle my_oracle)
 ```
 
 edit `my_oracle/spin.toml`:
@@ -765,7 +765,7 @@ entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/my_oracle && /sp
 Restart the entire setup:
 
 ```bash
-cd examples/my_oracle && cargo update && cargo build --target wasm32-wasi --release
+(cd examples/my_oracle && cargo update && cargo build --target wasm32-wasi --release)
 docker compose down
 docker compose up
 ```
