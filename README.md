@@ -765,6 +765,7 @@ entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/my_oracle && /sp
 Restart the entire setup:
 
 ```bash
+cd examples/my_oracle && cargo update && cargo build --target wasm32-wasi --release
 docker compose down
 docker compose up
 ```
