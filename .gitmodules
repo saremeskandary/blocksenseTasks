@@ -1,0 +1,3 @@
+[submodule "examples/price_consumer/lib/forge-std"]
+	path = examples/price_consumer/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
