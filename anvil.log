@@ -1,0 +1,3 @@
+thread 'main' panicked at /Users/runner/work/foundry/foundry/crates/anvil/src/config.rs:1148:57:
+Failed to get fork block number: Transport(Custom(reqwest::Error { kind: Request, url: "https://ethereum-sepolia.infura.io/v3/62d84167ce854c9caccd0a8bf846dbe0", source: hyper_util::client::legacy::Error(Connect, Custom { kind: Other, error: Custom { kind: UnexpectedEof, error: "tls handshake eof" } }) }))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
