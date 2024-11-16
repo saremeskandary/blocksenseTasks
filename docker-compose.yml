@@ -60,16 +60,8 @@ services:
     volumes:
       - ./config/reporter_config.json:/usr/local/blocksense/apps/reporter/reporter_config.json
       - ./config/reporter_secret_key:/usr/local/blocksense/apps/reporter/reporter_secret_key
-      - ./examples/yahoo:/usr/local/blocksense/oracles/yahoo
-      - ./examples/revolut:/usr/local/blocksense/oracles/revolut
-      - ./examples/cmc:/usr/local/blocksense/oracles/cmc
-      - ./examples/string_oracle:/usr/local/blocksense/oracles/string_oracle
-    #entrypoint: [ '/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/string_oracle && /spin up' ]
-    # entrypoint: [ '/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/revolut && /spin up' ]
-    #entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/yahoo && /spin up']
-    #entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/cmc && /spin up']
-    entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/binance && /spin up']
-
+      - ./examples/binance:/usr/local/blocksense/oracles/binance  # Add this line if missing
+    entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/binance && /spin up']  # Make sure this points to binance
     depends_on:
       sequencer:
         condition: service_healthy
