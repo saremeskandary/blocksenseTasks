@@ -1,8 +1,8 @@
 spin_manifest_version = 2
 
 [application]
-authors = ["Antoni Dikov"]
-name = "CMC Oracle"
+authors = ["sarem"]
+name = "Binance Oracle"
 version = "0.1.0"
 
 [application.trigger.settings]
@@ -12,30 +12,25 @@ secret_key = "536d1f9d97166eba5ff0efb8cc8dbeb856fb13d2d126ed1efc761e9955014003"
 reporter_id = 0
 
 [[trigger.oracle]]
-component = "coinmarketcap"
+component = "binance"
 
 [[trigger.oracle.data_feeds]]
-data = '{"cmc_id":1,"cmc_quote":"BTC"}'
+data = '{"symbol":"BTCUSDT"}'
 id = "31"
 
 [[trigger.oracle.data_feeds]]
-data = '{"cmc_id":1027,"cmc_quote":"ETH"}'
+data = '{"symbol":"ETHUSDT"}'
 id = "47"
 
 [[trigger.oracle.data_feeds]]
-data = '{"cmc_id":20641,"cmc_quote":"EURC"}'
+data = '{"symbol":"EURUSDT"}'
 id = "253"
 
-[[trigger.oracle.capabilities]]
-data = "00000000-0000-0000-0000-000000000000"
-id = "CMC_API_KEY"
-
-[component.coinmarketcap]
-source = "target/wasm32-wasi/release/cmc_oracle.wasm"
+[component.binance]
+source = "target/wasm32-wasi/release/binance_oracle.wasm"
 allowed_outbound_hosts = [
-  "https://pro-api.coinmarketcap.com",
+    "https://api.binance.com"
 ]
 
-[component.coinmarketcap.build]
+[component.binance.build]
 command = "cargo build --target wasm32-wasi --release"
-
