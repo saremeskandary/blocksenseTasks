@@ -1,9 +1,9 @@
 [package]
 name = "binance-oracle"
-authors = ["sarem"]
-description = ""
+authors = ["Sarem"]
+description = "Binance price oracle for Blocksense"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib"]
@@ -15,5 +15,6 @@ anyhow = "1.0.82"
 serde_json = "1.0"
 url = "2.5"
 serde = { version = "1.0", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
 
 [workspace]

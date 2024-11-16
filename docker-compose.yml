@@ -26,6 +26,7 @@ services:
       - ./config/feeds_config.json:/usr/local/blocksense/feeds_config.json
       - ./config/sequencer_config.json:/usr/local/blocksense/apps/sequencer/sequencer_config.json
       - ./config/sequencer_priv_key_test:/tmp/priv_key_test
+      - ./examples/binance:/usr/local/blocksense/oracles/binance
     networks:
       - backend
     healthcheck:
