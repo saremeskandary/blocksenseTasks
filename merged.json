@@ -1,0 +1,860 @@
+[
+{
+"path": "./LICENSE",
+"content": "MIT License
+Copyright (c) 2024 Blocksense
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the \"Software\"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE."
+},
+{
+"path": "./anvil.log",
+"content": "thread 'main' panicked at /Users/runner/work/foundry/foundry/crates/anvil/src/config.rs:1148:57:
+Failed to get fork block number: Transport(Custom(reqwest::Error { kind: Request, url: \"https://ethereum-sepolia.infura.io/v3/62d84167ce854c9caccd0a8bf846dbe0\", source: hyper_util::client::legacy::Error(Connect, Custom { kind: Other, error: Custom { kind: UnexpectedEof, error: \"tls handshake eof\" } }) }))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace"
+},
+{
+"path": "./check_oracle_data.sh",
+"content": "#!/bin/bash
+CONTACT=$(docker compose logs scdeploy  | grep 'UpgradeableProxy' | head -n 1 | awk '{print $NF}')
+echo \"UpgradeableProxy contract address $CONTACT\"
+ANVIL_CONTAINER=$(docker ps | grep foundry | awk '{ print $1}')
+echo \"Anvil container id $ANVIL_CONTAINER\"
+BTC_FEED_ID=\"1f\" # 31 feed id in HEX
+echo \"BTC/USD Price from contract\"
+docker exec -it ${ANVIL_CONTAINER} sh -c \"cast call ${CONTACT} --data 0x800000${BTC_FEED_ID} --rpc-url http://127.0.0.1:8545 |  cut -c1-50 | cast to-dec\" | awk '{print ($1 * 1e-18) }' && echo '' 
+ETH_FEED_ID=\"2f\" # 47 feed id in HEX
+echo \"ETH/USD Price from contract\"
+docker exec -it ${ANVIL_CONTAINER} sh -c \"cast call ${CONTACT} --data 0x800000${ETH_FEED_ID} --rpc-url http://127.0.0.1:8545 |  cut -c1-50 | cast to-dec\" | awk '{print ($1 * 1e-18) }' && echo '' 
+EURUSD_FEED_ID=\"fd\" # 47 feed id in HEX
+echo \"EUR/USD Price from contract\"
+docker exec -it ${ANVIL_CONTAINER} sh -c \"cast call ${CONTACT} --data 0x800000${EURUSD_FEED_ID} --rpc-url http://127.0.0.1:8545 |  cut -c1-50 | cast to-dec\" | awk '{print ($1 * 1e-18) }' && echo '' 
+TEXT_FEED_ID=\"de\" # 222 feed id in HEX
+echo \"Raw bytes from contract\"
+docker exec -it $ANVIL_CONTAINER sh -c \"cast call ${CONTACT} --data 0x800000${TEXT_FEED_ID} --rpc-url http://127.0.0.1:8545 |  cut -c1-50 \" && echo '' 
+echo \"Text from contract\"
+docker exec -it $ANVIL_CONTAINER sh -c \"cast call ${CONTACT} --data 0x800000${TEXT_FEED_ID} --rpc-url http://127.0.0.1:8545 |  cut -c1-50 \" |  xxd -r -p && echo '' "
+},
+{
+"path": "./config/feeds_config.json",
+"content": "{
+  \"feeds\": [
+    {
+      \"id\": 31,
+      \"name\": \"BTC\",
+      \"fullName\": \"\",
+      \"description\": \"BTC / USD\",
+      \"decimals\": 8,
+      \"report_interval_ms\": 30000,
+      \"quorum_percentage\": 1,
+      \"type\": \"Crypto\",
+      \"script\": \"CoinMarketCap\",
+      \"pair\": {
+        \"base\": \"BTC\",
+        \"quote\": \"USD\"
+      },
+      \"first_report_start_time\": {
+        \"secs_since_epoch\": 0,
+        \"nanos_since_epoch\": 0
+      },
+      \"resources\": {
+        \"cmc_id\": 1,
+        \"cmc_quote\": \"BTC\"
+      },
+      \"value_type\": \"Numerical\",
+      \"aggregate_type\": \"Median\"
+    },
+    {
+      \"id\": 47,
+      \"name\": \"ETH\",
+      \"fullName\": \"\",
+      \"description\": \"ETH / USD\",
+      \"decimals\": 8,
+      \"report_interval_ms\": 30000,
+      \"quorum_percentage\": 1,
+      \"type\": \"Crypto\",
+      \"script\": \"CoinMarketCap\",
+      \"pair\": {
+        \"base\": \"ETH\",
+        \"quote\": \"USD\"
+      },
+      \"first_report_start_time\": {
+        \"secs_since_epoch\": 0,
+        \"nanos_since_epoch\": 0
+      },
+      \"resources\": {
+        \"cmc_id\": 1027,
+        \"cmc_quote\": \"ETH\"
+      },
+      \"value_type\": \"Numerical\",
+      \"aggregate_type\": \"Median\"
+    },
+    {
+      \"id\": 253,
+      \"name\": \"EUR\",
+      \"fullName\": \"Euro\",
+      \"description\": \"EUR / USD\",
+      \"decimals\": 8,
+      \"report_interval_ms\": 30000,
+      \"quorum_percentage\": 1,
+      \"type\": \"Forex\",
+      \"script\": \"YahooFinance\",
+      \"pair\": {
+        \"base\": \"EUR\",
+        \"quote\": \"USD\"
+      },
+      \"first_report_start_time\": {
+        \"secs_since_epoch\": 0,
+        \"nanos_since_epoch\": 0
+      },
+      \"resources\": {
+        \"yf_symbol\": \"EURUSD=X\"
+      },
+      \"value_type\": \"Numerical\",
+      \"aggregate_type\": \"Median\"
+    },
+    {
+      \"id\": 222,
+      \"name\": \"Text\",
+      \"fullName\": \"Some text\",
+      \"description\": \"Hello World\",
+      \"decimals\": 8,
+      \"report_interval_ms\": 30000,
+      \"quorum_percentage\": 1,
+      \"type\": \"Forex\",
+      \"script\": \"YahooFinance\",
+      \"pair\": {
+        \"base\": \"EUR\",
+        \"quote\": \"USD\"
+      },
+      \"first_report_start_time\": {
+        \"secs_since_epoch\": 0,
+        \"nanos_since_epoch\": 0
+      },
+      \"resources\": {
+        \"yf_symbol\": \"EURUSD=X\"
+      },
+      \"value_type\": \"Text\",
+      \"aggregate_type\": \"Median\"
+    }
+  ]
+}"
+},
+{
+"path": "./config/private/CMC_API_KEY",
+"content": "00000000-0000-0000-0000-000000000000"
+},
+{
+"path": "./config/private/README.txt",
+"content": "Register at
+https://coinmarketcap.com/api/pricing/
+and paste API key in this directory in file
+`CMC_API_KEY`
+Register at
+https://financeapi.net/#:~:text=Real%20time%20low%20latency%20Finance%20API%20for%20stock%20market,%20crypto
+and paste API key in this directory in file
+`YH_FINANCE_API_KEY`"
+},
+{
+"path": "./config/private/YH_FINANCE_API_KEY",
+"content": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+},
+{
+"path": "./config/reporter_config.json",
+"content": "{
+  \"full_batch\": true,
+  \"batch_size\": 5,
+  \"sequencer_url\": \"http://sequencer:8877\",
+  \"prometheus_url\": \"127.0.0.1:8080\",
+  \"poll_period_ms\": 300000,
+  \"resources\": {
+    \"SECRET_KEY_PATH\": \"/usr/local/blocksense/apps/reporter/reporter_secret_key\",
+    \"CMC_API_KEY_PATH\": \"/usr/local/blocksense/apps/reporter/CMC_API_KEY\",
+    \"YH_FINANCE_API_KEY_PATH\": \"/usr/local/blocksense/apps/reporter/YH_FINANCE_API_KEY\"
+  },
+  \"reporter\": {
+    \"id\": 0,
+    \"pub_key\": \"ea30af86b930d539c55677b05b4a5dad9fce1f758ba09d152d19a7d6940f8d8a8a8fb9f90d38a19e988d721cddaee4567d2e\"
+  }
+}"
+},
+{
+"path": "./config/reporter_secret_key",
+"content": "536d1f9d97166eba5ff0efb8cc8dbeb856fb13d2d126ed1efc761e9955014003"
+},
+{
+"path": "./config/sequencer_config.json",
+"content": "{
+  \"main_port\": 8877,
+  \"admin_port\": 25556,
+  \"prometheus_port\": 25555,
+  \"max_keys_to_batch\": 1,
+  \"keys_batch_duration\": 500,
+  \"providers\": {
+      \"ETH1\": {\"private_key_path\": \"/tmp/priv_key_test\", \"url\": \"http://anvil:8545\", \"transcation_timeout_secs\": 50, \"contract_address\": \"0xc04b335A75C5Fa14246152178f6834E3eBc2DC7C\",
+                \"data_feed_store_byte_code\": \"0x60a060405234801561001057600080fd5b506040516101cf3803806101cf83398101604081905261002f91610040565b6001600160a01b0316608052610070565b60006020828403121561005257600080fd5b81516001600160a01b038116811461006957600080fd5b9392505050565b60805161014561008a6000396000609001526101456000f3fe608060405234801561001057600080fd5b50600060405160046000601c83013751905063e000000081161561008e5763e0000000198116632000000082161561005957806020526004356004603c20015460005260206000f35b805463800000008316156100775781600052806004601c2001546000525b634000000083161561008857806020525b60406000f35b7f00000000000000000000000000000000000000000000000000000000000000003381146100bb57600080fd5b631a2d80ac820361010a57423660045b8181101561010857600481601c376000516004601c2061ffff6001835408806100f2575060015b91829055600483013585179101556024016100cb565b005b600080fdfea26469706673582212204a7c38e6d9b723ea65e6d451d6a8436444c333499ad610af033e7360a2558aea64736f6c63430008180033\",
+                \"data_feed_sports_byte_code\": \"0x60a0604052348015600e575f80fd5b503373ffffffffffffffffffffffffffffffffffffffff1660808173ffffffffffffffffffffffffffffffffffffffff168152505060805161020e61005a5f395f60b1015261020e5ff3fe608060405234801561000f575f80fd5b5060045f601c375f5163800000008116156100ad5760043563800000001982166040517ff0000f000f00000000000000000000000000000000000000000000000000000081528160208201527ff0000f000f0000000000000001234000000000000000000000000000000000016040820152606081205f5b848110156100a5578082015460208202840152600181019050610087565b506020840282f35b505f7f000000000000000000000000000000000000000000000000000000000000000090503381146100dd575f80fd5b5f51631a2d80ac81036101d4576040513660045b818110156101d0577ff0000f000f0000000000000000000000000000000000000000000000000000008352600481603c8501377ff0000f000f000000000000000123400000000000000000000000000000000001604084015260608320600260048301607e86013760608401516006830192505f5b81811015610184576020810284013581840155600181019050610166565b50806020028301925060208360408701377fa826448a59c096f4c3cbad79d038bc4924494a46fc002d46861890ec5ac62df0604060208701a150506020810190506080830192506100f1565b5f80f35b5f80fdfea2646970667358221220b77f3ab2f01a4ba0833f1da56458253968f31db408e07a18abc96dd87a272d5964736f6c634300081a0033\"}  },
+  \"reporters\" : [
+    {\"id\": 0, \"pub_key\": \"ea30af86b930d539c55677b05b4a5dad9fce1f758ba09d152d19a7d6940f8d8a8a8fb9f90d38a19e988d721cddaee4567d2e\" }
+  ]
+}"
+},
+{
+"path": "./config/sequencer_priv_key_test",
+"content": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+},
+{
+"path": "./docker-compose.yml",
+"content": "name: blocksense-hackaton
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:nightly-0688b5ad19a637303c038d1a66aec62a73713e20 
+    entrypoint: [ 'sh', '-c', 'anvil -p 8545 --host 0.0.0.0 --fork-url \"https://ethereum-sepolia-rpc.publicnode.com\" --chain-id 99999999999' ]
+      #entrypoint: [ 'sh', '-c', 'anvil -p 8545 --host 0.0.0.0 --fork-url \"wss://polygon-amoy-bor-rpc.publicnode.com\" --chain-id 99999999999' ]
+    ports:
+      - '8545:8545'
+    networks:
+      - backend
+    healthcheck:
+      test: wget http://0.0.0.0:8545 2>&1 | grep -c 'Bad Request' > /dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 1
+  sequencer:
+    image: ymadzhunkov/blocksense_hackaton:sequencer-mac
+    ports:
+      - '8877:8877'
+      - '25555:25555'
+      - '25556:25556'
+    volumes:
+      - ./config/feeds_config.json:/usr/local/blocksense/feeds_config.json
+      - ./config/sequencer_config.json:/usr/local/blocksense/apps/sequencer/sequencer_config.json
+      - ./config/sequencer_priv_key_test:/tmp/priv_key_test
+    networks:
+      - backend
+    healthcheck:
+      test: [ CMD-SHELL, 'wget http://0.0.0.0:8877 2>&1 | grep -c \"ERROR 404: Not Found\" > /dev/null' ]
+      interval: 5s
+      timeout: 5s
+      retries: 1
+    depends_on:
+      anvil:
+        condition: service_healthy
+      scdeploy:
+        condition: service_completed_successfully
+  scdeploy:
+    image: ymadzhunkov/blocksense_hackaton:scdeploy-mac
+    environment:
+      - RPC_URL_LOCAL=http://anvil:8545
+    volumes:
+      - ./config/feeds_config.json:/usr/local/blocksense/config/feeds_config.json
+    networks:
+      - backend
+    depends_on:
+      anvil:
+        condition: service_healthy
+  reporter:
+    image: ymadzhunkov/blocksense_hackaton:reporter-mac
+    networks:
+      - backend
+    volumes:
+      - ./config/reporter_config.json:/usr/local/blocksense/apps/reporter/reporter_config.json
+      - ./config/reporter_secret_key:/usr/local/blocksense/apps/reporter/reporter_secret_key
+      - ./examples/yahoo:/usr/local/blocksense/oracles/yahoo
+      - ./examples/revolut:/usr/local/blocksense/oracles/revolut
+      - ./examples/cmc:/usr/local/blocksense/oracles/cmc
+      - ./examples/string_oracle:/usr/local/blocksense/oracles/string_oracle
+    #entrypoint: [ '/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/string_oracle && /spin up' ]
+    entrypoint: [ '/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/revolut && /spin up' ]
+    #entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/yahoo && /spin up']
+    #entrypoint: ['/bin/sh', '-c', 'cd /usr/local/blocksense/oracles/cmc && /spin up']
+    depends_on:
+      sequencer:
+        condition: service_healthy
+networks:
+  backend:
+    driver: bridge"
+},
+{
+"path": "./examples/binance/target/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/binance/target/wasm32-wasi/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/cmc/Cargo.toml",
+"content": "[package]
+name = \"cmc-oracle\"
+authors = [\"Antoni Dikov\"]
+description = \"\"
+version = \"0.1.0\"
+edition = \"2021\"
+[lib]
+crate-type = [\"cdylib\"]
+[dependencies]
+wit-bindgen = \"0.16.0\"
+blocksense-sdk = { git = \"https://github.com/blocksense-network/sdk.git\" }
+anyhow = \"1.0.82\"
+serde_json = \"1.0\"
+url = \"2.5\"
+serde = { version = \"1.0\", features = [\"derive\"] }
+[workspace]"
+},
+{
+"path": "./examples/cmc/spin.toml",
+"content": "spin_manifest_version = 2
+[application]
+authors = [\"Antoni Dikov\"]
+name = \"CMC Oracle\"
+version = \"0.1.0\"
+[application.trigger.settings]
+interval_time_in_seconds = 10
+sequencer = \"http://sequencer:8877/post_report\"
+secret_key = \"536d1f9d97166eba5ff0efb8cc8dbeb856fb13d2d126ed1efc761e9955014003\"
+reporter_id = 0
+[[trigger.oracle]]
+component = \"coinmarketcap\"
+[[trigger.oracle.data_feeds]]
+data = '{\"cmc_id\":1,\"cmc_quote\":\"BTC\"}'
+id = \"31\"
+[[trigger.oracle.data_feeds]]
+data = '{\"cmc_id\":1027,\"cmc_quote\":\"ETH\"}'
+id = \"47\"
+[[trigger.oracle.data_feeds]]
+data = '{\"cmc_id\":20641,\"cmc_quote\":\"EURC\"}'
+id = \"253\"
+[[trigger.oracle.capabilities]]
+data = \"00000000-0000-0000-0000-000000000000\"
+id = \"CMC_API_KEY\"
+[component.coinmarketcap]
+source = \"target/wasm32-wasi/release/cmc_oracle.wasm\"
+allowed_outbound_hosts = [
+  \"https://pro-api.coinmarketcap.com\",
+]
+[component.coinmarketcap.build]
+command = \"cargo build --target wasm32-wasi --release\""
+},
+{
+"path": "./examples/cmc/src/lib.rs",
+"content": "use anyhow::Result;
+use blocksense_sdk::{
+    oracle::{DataFeedResult, DataFeedResultValue, Payload, Settings},
+    oracle_component,
+    spin::http::{send, Method, Request, Response},
+};
+use std::collections::HashMap;
+use serde::Deserialize;
+use serde_json::Value;
+use url::Url;
+#[allow(dead_code)]
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct Root {
+    pub status: Status,
+    pub data: HashMap<u64, CmcData>,
+}
+#[allow(dead_code)]
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct Status {
+    pub timestamp: String,
+    #[serde(rename = \"error_code\")]
+    pub error_code: i64,
+    #[serde(rename = \"error_message\")]
+    pub error_message: Value,
+    pub elapsed: i64,
+    #[serde(rename = \"credit_count\")]
+    pub credit_count: i64,
+    pub notice: Value,
+}
+#[allow(dead_code)]
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct CmcData {
+    id: i64,
+    quote: HashMap<String, CmcValue>,
+}
+#[allow(dead_code)]
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct Tag {
+    pub slug: String,
+    pub name: String,
+    pub category: String,
+}
+#[allow(dead_code)]
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct CmcValue {
+    pub price: f64,
+}
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+pub struct CmcResource {
+    pub cmc_id: u64,
+    pub cmc_quote: String,
+}
+#[oracle_component]
+async fn oracle_request(settings: Settings) -> Result<Payload> {
+    let mut resources: HashMap<String, CmcResource> = HashMap::new();
+    let mut ids: Vec<String> = vec![];
+    // Compose one query to CMC api for all data feeds
+    for feed in settings.data_feeds.iter() {
+        let data: CmcResource = serde_json::from_str(&feed.data)?;
+        resources.insert(feed.id.clone(), data.clone());
+        ids.push(data.cmc_id.to_string());
+    }
+    let url = Url::parse_with_params(
+        \"https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest\",
+        &[(\"id\", ids.join(\",\"))],
+    )?;
+    let mut req = Request::builder();
+    req.method(Method::Get);
+    req.uri(url);
+    // Properly set the headers of the GET request including API KEY.
+    req.header(
+        \"X-CMC_PRO_API_KEY\",
+        settings
+            .capabilities
+            .first()
+            .expect(\"We expect only one capability.\")
+            .data
+            .clone(),
+    );
+    req.header(\"Accepts\", \"application/json\");
+    let req = req.build();
+    // Fetch data for each needed data feed from CMC API
+    let resp: Response = send(req).await?;
+    let body = resp.into_body();
+    let string = String::from_utf8(body)?;
+    // Get the body of the response and parse it using serde_json crate.
+    let value: Root = serde_json::from_str(&string)?;
+    println!(\"CMC Response = `{}`\", &string);
+    let mut payload: Payload = Payload::new();
+    
+    // Iterate through all the data feeds that would be served.
+    for (feed_id, data) in resources.iter() {
+        payload.values.push(match value.data.get(&data.cmc_id) {
+            Some(cmc) => {
+                let value = if let Some(&CmcValue { price }) = cmc.quote.get(\"USD\") {
+                    DataFeedResultValue::Numerical(price)
+                } else {
+                    DataFeedResultValue::Error(format!(
+                        \"No price in USD for data feed with id {}\",
+                        data.cmc_id
+                    ))
+                };
+                DataFeedResult {
+                    id: feed_id.clone(),
+                    value,
+                }
+            }
+            None => {
+                let error = format!(\"CMC data feed with id {} is not found\", data.cmc_id);
+                DataFeedResult {
+                    id: feed_id.clone(),
+                    value: DataFeedResultValue::Error(error),
+                }
+            }
+        });
+    }
+    // Return payload to be pushed to sequencer
+    Ok(payload)
+}"
+},
+{
+"path": "./examples/cmc/target/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/cmc/target/wasm32-wasi/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/revolut/Cargo.toml",
+"content": "[package]
+name = \"revolut-oracle\"
+authors = [\"Antoni Dikov\"]
+description = \"\"
+version = \"0.1.0\"
+edition = \"2021\"
+[lib]
+crate-type = [\"cdylib\"]
+[dependencies]
+wit-bindgen = \"0.16.0\"
+blocksense-sdk = { git = \"https://github.com/blocksense-network/sdk.git\" }
+anyhow = \"1.0.82\"
+serde_json = \"1.0\"
+url = \"2.5\"
+serde = { version = \"1.0\", features = [\"derive\"] }
+[workspace]"
+},
+{
+"path": "./examples/revolut/spin.toml",
+"content": "spin_manifest_version = 2
+[application]
+authors = [\"Antoni Dikov\"]
+name = \"Blocksense Oracle Example\"
+version = \"0.1.0\"
+[application.trigger.settings]
+interval_time_in_seconds = 10
+sequencer = \"http://sequencer:8877/post_report\"
+secret_key = \"536d1f9d97166eba5ff0efb8cc8dbeb856fb13d2d126ed1efc761e9955014003\"
+reporter_id = 0
+[[trigger.oracle]]
+component = \"revolut-api-fetcher\"
+[[trigger.oracle.data_feeds]]
+id = \"47\"
+data = \"ETHUSD\"
+[[trigger.oracle.data_feeds]]
+id = \"31\"
+data = \"BTCUSD\"
+[[trigger.oracle.data_feeds]]
+id = \"253\"
+data = \"EURUSD\"
+[component.revolut-api-fetcher]
+source = \"target/wasm32-wasi/release/revolut_oracle.wasm\"
+allowed_outbound_hosts = [\"https://www.revolut.com\"]
+[component.revolut-api-fetcher.build]
+command = \"cargo build --target wasm32-wasi --release\""
+},
+{
+"path": "./examples/revolut/src/lib.rs",
+"content": "use anyhow::Result;
+use blocksense_sdk::{
+    oracle::{DataFeedResult, DataFeedResultValue, Payload, Settings},
+    oracle_component,
+    spin::http::{send, Method, Request, Response},
+};
+use serde::Deserialize;
+use url::Url;
+#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+struct Rate {
+    from: String,
+    to: String,
+    rate: f64,
+    timestamp: u64,
+}
+#[oracle_component]
+async fn oracle_request(settings: Settings) -> Result<Payload> {
+    let mut payload: Payload = Payload::new();
+    // Iterate through all the data feeds that would be served.
+    for data_feed in settings.data_feeds.iter() {
+        let url = Url::parse(format!(\"https://www.revolut.com/api/quote/public/{}\", data_feed.data).as_str())?;
+        println!(\"URL - {}\", url.as_str());
+        let mut req = Request::builder();
+        req.method(Method::Get);
+        req.uri(url);"
+},
+{
+"path": "./examples/revolut/target/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/revolut/target/wasm32-wasi/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/string_oracle/Cargo.toml",
+"content": "[package]
+name = \"revolut-oracle\"
+authors = [\"Antoni Dikov\"]
+description = \"\"
+version = \"0.1.0\"
+edition = \"2021\"
+[lib]
+crate-type = [\"cdylib\"]
+[dependencies]
+wit-bindgen = \"0.16.0\"
+blocksense-sdk = { git = \"https://github.com/blocksense-network/sdk.git\" }
+anyhow = \"1.0.82\"
+serde_json = \"1.0\"
+url = \"2.5\"
+serde = { version = \"1.0\", features = [\"derive\"] }
+[workspace]"
+},
+{
+"path": "./examples/string_oracle/spin.toml",
+"content": "spin_manifest_version = 2
+[application]
+authors = [\"Yordan Madzhunkov\"]
+name = \"Blocksense String Oracle Example\"
+version = \"0.1.0\"
+[application.trigger.settings]
+interval_time_in_seconds = 10
+sequencer = \"http://sequencer:8877/post_report\"
+secret_key = \"536d1f9d97166eba5ff0efb8cc8dbeb856fb13d2d126ed1efc761e9955014003\"
+reporter_id = 0
+[[trigger.oracle]]
+component = \"revolut-api-fetcher\"
+[[trigger.oracle.data_feeds]]
+id = \"47\"
+data = \"ETHUSD\"
+[[trigger.oracle.data_feeds]]
+id = \"31\"
+data = \"BTCUSD\"
+[[trigger.oracle.data_feeds]]
+id = \"253\"
+data = \"EURUSD\"
+[[trigger.oracle.data_feeds]]
+id = \"222\"
+data = \"TEXTDATA\"
+[component.revolut-api-fetcher]
+source = \"target/wasm32-wasi/release/revolut_oracle.wasm\"
+allowed_outbound_hosts = [\"https://www.revolut.com\"]
+[component.revolut-api-fetcher.build]
+command = \"cargo build --target wasm32-wasi --release\""
+},
+{
+"path": "./examples/string_oracle/src/lib.rs",
+"content": "use anyhow::Result;
+use blocksense_sdk::{
+    oracle::{DataFeedResult, DataFeedResultValue, Payload, Settings},
+    oracle_component,
+    spin::http::{send, Method, Request, Response},
+};
+use serde::Deserialize;
+use url::Url;
+#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+struct Rate {
+    from: String,
+    to: String,
+    rate: f64,
+    timestamp: u64,
+}
+#[oracle_component]
+async fn oracle_request(settings: Settings) -> Result<Payload> {
+    let mut payload: Payload = Payload::new();
+    // Iterate through all the data feeds that would be served.
+    for data_feed in settings.data_feeds.iter() {
+        // Feed 222 is string the rest of the feeds are numerical
+        if data_feed.id != \"222\" {
+            let url = Url::parse(format!(\"https://www.revolut.com/api/quote/public/{}\", data_feed.data).as_str())?;
+            println!(\"URL - {}\", url.as_str());
+            let mut req = Request::builder();
+            req.method(Method::Get);
+            req.uri(url);"
+},
+{
+"path": "./examples/string_oracle/target/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/string_oracle/target/wasm32-wasi/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/yahoo/Cargo.toml",
+"content": "[package]
+name = \"yahoo-oracle\"
+authors = [\"Antoni Dikov\"]
+description = \"\"
+version = \"0.1.0\"
+edition = \"2021\"
+[lib]
+crate-type = [\"cdylib\"]
+[dependencies]
+wit-bindgen = \"0.16.0\"
+blocksense-sdk = { git = \"https://github.com/blocksense-network/sdk.git\" }
+anyhow = \"1.0.82\"
+serde_json = \"1.0\"
+url = \"2.5\"
+serde = { version = \"1.0\", features = [\"derive\"] }
+serde_derive = \"1.0.210\"
+[workspace]"
+},
+{
+"path": "./examples/yahoo/spin.toml",
+"content": "spin_manifest_version = 2
+[application]
+authors = [\"Antoni Dikov\"]
+name = \"Yahoo Oracle\"
+version = \"0.1.0\"
+[application.trigger.settings]
+interval_time_in_seconds = 10
+sequencer = \"http://sequencer:8877/post_report\"
+secret_key = \"536d1f9d97166eba5ff0efb8cc8dbeb856fb13d2d126ed1efc761e9955014003\"
+reporter_id = 0
+[[trigger.oracle]]
+component = \"yahoo\"
+[[trigger.oracle.data_feeds]]
+data = '{\"yf_symbol\":\"EURUSD=X\"}'
+id = \"253\"
+[[trigger.oracle.data_feeds]]
+data = '{\"yf_symbol\":\"BTC-USD\"}'
+id = \"31\"
+[[trigger.oracle.data_feeds]]
+data = '{\"yf_symbol\":\"ETH-USD\"}'
+id = \"47\"
+[component.yahoo]
+source = \"target/wasm32-wasi/release/yahoo_oracle.wasm\"
+allowed_outbound_hosts = [
+  \"https://yfapi.net:443\",
+]
+[[trigger.oracle.capabilities]]
+data = \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"
+id = \"YAHOO_API_KEY\"
+[component.yahoo.build]
+command = \"cargo build --target wasm32-wasi --release\""
+},
+{
+"path": "./examples/yahoo/src/lib.rs",
+"content": "use anyhow::Result;
+use blocksense_sdk::{
+    oracle::{DataFeedResult, DataFeedResultValue, Payload, Settings},
+    oracle_component,
+    spin::http::{send, Method, Request, Response},
+};
+use std::collections::HashMap;
+use serde::Deserialize;
+use serde_json::Value;
+use url::Url;
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct Root {
+    pub quote_response: Option<QuoteResponse>,
+}
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct QuoteResponse {
+    pub result: Vec<YahooResult>,
+    pub error: Value,
+}
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = \"camelCase\")]
+pub struct YahooResult {
+    pub regular_market_previous_close: Option<f64>,
+    pub regular_market_price: Option<f64>,
+    pub symbol: String,
+}
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+pub struct YahooResource {
+    pub yf_symbol: String,
+}
+#[oracle_component]
+async fn oracle_request(settings: Settings) -> Result<Payload> {
+    let mut resources: HashMap<String, YahooResource> = HashMap::new();
+    let mut ids: Vec<String> = vec![];
+    for feed in settings.data_feeds.iter() {
+        let data: YahooResource = serde_json::from_str(&feed.data)?;
+        resources.insert(feed.id.clone(), data.clone());
+        ids.push(data.yf_symbol.clone());
+    }
+    let url = Url::parse_with_params(
+        \"https://yfapi.net/v6/finance/quote\",
+        &[(\"symbols\", ids.join(\",\"))],
+    )?;
+    let mut req = Request::builder();
+    req.method(Method::Get);
+    req.uri(url);
+    // Please provide your own API key until capabilities are implemented.
+    req.header(
+        \"x-api-key\",
+        settings
+            .capabilities
+            .first()
+            .expect(\"We expect only one capability.\")
+            .data
+            .clone(),
+    );
+    req.header(\"Accepts\", \"application/json\");
+    let req = req.build();
+    // Fetch data for each needed data feed from Yahoo API
+    let resp: Response = send(req).await?;
+    let body = resp.into_body();
+    let string = String::from_utf8(body)?;
+    let value: Root = serde_json::from_str(&string)?;
+    let mut payload: Payload = Payload::new();
+    let mut quote_response = value
+        .quote_response
+        .ok_or(anyhow::anyhow!(\"No Yahoo response.\"))?;
+    // Iterate through all the data feeds that would be served.
+    for (feed_id, data) in resources.iter() {
+        let position = quote_response
+            .result
+            .iter()
+            .position(|yahoo_result| data.yf_symbol == yahoo_result.symbol);
+        payload.values.push(match position {
+            Some(index) => {
+                let yahoo = quote_response.result.swap_remove(index);
+                let value = if let Some(price) = yahoo.regular_market_price {
+                    DataFeedResultValue::Numerical(price)
+                } else if let Some(price) = yahoo.regular_market_previous_close {
+                    DataFeedResultValue::Numerical(price)
+                } else {
+                    DataFeedResultValue::Error(format!(
+                        \"No price for data feed with id {}\",
+                        feed_id
+                    ))
+                };
+                DataFeedResult {
+                    id: feed_id.clone(),
+                    value,
+                }
+            }
+            None => {
+                let error = format!(
+                    \"Yahoo data feed with symbol {} is not found\",
+                    data.yf_symbol
+                );
+                DataFeedResult {
+                    id: feed_id.clone(),
+                    value: DataFeedResultValue::Error(error),
+                }
+            }
+        });
+    }
+    // Print symbols that were not consumed because there is no feed for them
+    for yahoo in quote_response.result.iter() {
+        println!(
+            \"Yahoo response with symbol {} wasn't consumed\",
+            yahoo.symbol
+        );
+    }
+    // Return payload to be pushed to sequencer
+    Ok(payload)
+}"
+},
+{
+"path": "./examples/yahoo/target/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+},
+{
+"path": "./examples/yahoo/target/wasm32-wasi/CACHEDIR.TAG",
+"content": "Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by cargo.
+# For information about cache directory tags see https://bford.info/cachedir/"
+}]
